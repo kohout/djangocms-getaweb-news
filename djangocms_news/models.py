@@ -5,7 +5,6 @@ from django.core.urlresolvers import reverse
 from django.db import models
 from django.utils.translation import ugettext as _
 from django.utils.timezone import utc
-from django.views.generic import TemplateView
 from easy_thumbnails.fields import ThumbnailerImageField
 from easy_thumbnails.files import get_thumbnailer
 from easy_thumbnails.exceptions import InvalidImageFormatError
@@ -130,7 +129,7 @@ class NewsTeaser(CMSPlugin):
 
 class NewsImage(models.Model):
     image = ThumbnailerImageField(
-        upload_to='news_image/',
+        upload_to='cms_news/',
         verbose_name=_(u'Image'))
 
     image_width = models.PositiveSmallIntegerField(
