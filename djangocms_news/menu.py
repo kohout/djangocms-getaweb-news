@@ -10,6 +10,9 @@ class NewsCategoryMenu(CMSAttachMenu):
 
     def get_nodes(self, request):
         nodes = []
+        if not request.current_page:
+            return nodes
+
         for category in NewsCategory.objects.filter(
             newsitem__target_page=request.current_page).distinct().order_by(
                 'title'):

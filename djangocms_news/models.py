@@ -65,6 +65,7 @@ class NewsItem(models.Model):
 
     news_categories = models.ManyToManyField(
         NewsCategory,
+        blank=True, null=True,
         verbose_name=_(u'Selected news categories'))
 
     target_page = models.ForeignKey(Page,
@@ -82,6 +83,10 @@ class NewsItem(models.Model):
 
     def has_multiple_images(self):
         return self.newsimage_set.count() > 1
+
+    def get_absolute_url(self):
+        view_name = '%s:news-detail' % self.target_page.application_namespace
+        return reverse(view_name, kwargs={'slug': self.slug})
 
     class Meta:
         ordering = ('-news_date', )
