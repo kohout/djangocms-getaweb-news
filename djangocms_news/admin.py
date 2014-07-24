@@ -4,10 +4,12 @@ from django.utils.translation import ugettext as _
 from .models import NewsCategory, NewsItem, NewsImage
 from .forms import NewsItemForm
 
+from adminsortable.admin import SortableInlineAdminMixin
+
 class NewsCategoryAdmin(admin.ModelAdmin):
     list_display = ('title', 'newsitems_count', )
 
-class NewsImageInline(admin.TabularInline):
+class NewsImageInline(SortableInlineAdminMixin, admin.TabularInline):
     fields = ('render_preview', 'image', 'title', 'alt', 'ordering', )
     readonly_fields = ('render_preview', )
     model = NewsImage
@@ -32,16 +34,20 @@ class NewsItemAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('title',)}
     fieldsets = (
         (_(u'Common'), {
-            'classes': ('grp-collapse grp-open', ),
             'fields': (
                 ('active', ),
                 ('news_date', ),
-                ('target_page', 'news_categories', )
+                ('target_page', 'news_categories', ),
             )
         }),
         (_(u'Content'), {
-            'classes': ('grp-collapse grp-open', ),
-            'fields': ('title', 'slug', 'abstract', 'content', )
+            'fields': (
+                ('title', 'slug', ),
+                ('abstract', ),
+                ('content', ),
+                ('additional_images_pagination',
+                 'additional_images_speed', ),
+            ),
         })
     )
     inlines = [NewsImageInline]

@@ -33,6 +33,11 @@ class NewsCategory(models.Model):
 
 
 class NewsItem(models.Model):
+    ADDITIONAL_IMAGES_PAGINATION_CHOICES = (
+        (0, _(u'No pagination')),
+        (1, _(u'Pagination')),
+        (2, _(u'Slideshow')),
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name=_(u'Created at'))
@@ -70,6 +75,17 @@ class NewsItem(models.Model):
 
     target_page = models.ForeignKey(Page,
         verbose_name=_(u'Target Page'))
+
+    additional_images_pagination = models.PositiveIntegerField(
+        default=1,
+        choices=ADDITIONAL_IMAGES_PAGINATION_CHOICES,
+        verbose_name=_(u'Pagination of additional images'))
+
+    additional_images_speed = models.PositiveIntegerField(
+        default=3000,
+        help_text=_(
+            u'This option is relevant, if you choose the slideshow-mode'),
+        verbose_name=_(u'Speed of transition'))
 
     def get_first_image(self):
         images = self.newsimage_set.all()
