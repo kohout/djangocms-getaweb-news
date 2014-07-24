@@ -136,7 +136,8 @@ class NewsTeaser(CMSPlugin):
         verbose_name=_(u'Target Page'))
 
     def get_items(self):
-        items = NewsItem.objects.filter(active=True)
+        items = NewsItem.objects.filter(active=True,
+                                        target_page=self.target_page)
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         if self.ordering == self.NEWS_ORDERING_PAST_DESC:
             items = items.filter(news_date__lte=now).order_by('-news_date')
