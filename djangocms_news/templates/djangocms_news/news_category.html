@@ -1,0 +1,75 @@
+{% extends "layouts/sidebar_left.html" %}
+{% load cms_tags sekizai_tags thumbnail cmsnews %}
+
+{% block head %}
+    <link href="{% newsindex_url %}" rel="canonical" />
+{% endblock %}
+
+{% block sidebar %}
+    {% include "djangocms_news/news_filter.html" with filter_tag='news' set_category=category %}
+{% endblock %}
+
+{% block content %}
+    {% addtoblock "css" %}
+        <link rel="stylesheet" href="{{ STATIC_URL }}css/masonry.css">
+    {% endaddtoblock %}
+
+    {% addtoblock "js" %}
+        <script src="{{ STATIC_URL }}js/imagesloaded.pkgd.min.js"></script>
+        <script src="{{ STATIC_URL }}js/masonry.pkgd.min.js"></script>
+    {% endaddtoblock %}
+
+    <h1>News</h1>
+    <div id="masonry-loader">
+        <i class="fa fa-spinner fa-spin fa-5x"></i>
+    </div>
+    <div id="masonry-container">
+        {% for news in object_list %}
+            {% if news.active %}
+                <div class="masonry-item one-third{% for cat in news.news_categories.all %} news-{{ cat.pk }}{% endfor %}">
+                    <div class="masonry-item-image">
+                        <a href="{% newsitem_url news.slug %}" data-toggle="modal" data-target="#modal-window">
+                            {% if news.newsimage_set.all %}
+                                {% with news.newsimage_set.all|first as newsimage %}
+                                    <img src="{{ newsimage.image|thumbnail_url:'masonry' }}" alt="{{ news.title }}" />
+                                {% endwith %}
+                            {% endif %}
+                            <div class="masonry-item-title">{{ news.title }}</div>
+                        </a>
+                    </div>
+
+                    <div class="masonry-item-description">
+                        {% if news.abstract %}
+                            {{ news.abstract }}
+                        {% else %}
+                            {{ news.content }}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+    {% endfor %}
+    </div>
+    <div id="masonry-no-content">
+        <i class="fa fa-meh-o fa-5x fa-fw"></i> <span>Keine Inhalte gefunden!</span>
+    </div>
+
+    <!-- Modal Item -->
+    <div class="modal" id="modal-window" tabindex="-1" role="dialog" aria-labelledby="modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-center modal-lg">
+            <div id="modal-loader">
+                <i class="fa fa-spinner fa-spin fa-5x"></i>
+            </div>
+
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h1 class="modal-title" id="modal-label"></h1>
+                </div>
+                <div id="modal-body" class="modal-body">
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

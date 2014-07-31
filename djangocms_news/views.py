@@ -4,6 +4,7 @@ from django.core.urlresolvers import resolve
 from django.views.generic import ListView, DetailView
 from .models import NewsItem, NewsCategory
 
+
 class NewsMixin(object):
     current_category = 0
 
@@ -44,7 +45,21 @@ class NewsListView(NewsMixin, ListView):
     A complete list of the news items
     """
     model = NewsItem
-    template_name = 'djangocms_news/team_list.html'
+    template_name = 'djangocms_news/news_index.html'
+
+
+class NewsCategoryView(NewsMixin, ListView):
+    """
+    A list of news items in a category
+    """
+    model = NewsItem
+    template_name = 'djangocms_news/news_category.html'
+
+    def get_context_data(self, *args, **kwargs):
+        ctx = super(NewsCategoryView, self).get_context_data(*args, **kwargs)
+        ctx['categories'] = NewsCategory.objects.all().distinct().order_by('title')
+        ctx['category'] = self.kwargs['category']
+        return ctx
 
 
 class NewsDetailView(NewsMixin, DetailView):
@@ -53,7 +68,7 @@ class NewsDetailView(NewsMixin, DetailView):
     """
     slug_field = 'slug'
     model = NewsItem
-    template_name = 'djangocms_news/detail.html'
+    template_name = 'djangocms_news/news_detail.html'
 
     def get_object(self):
         obj = super(NewsDetailView, self).get_object()

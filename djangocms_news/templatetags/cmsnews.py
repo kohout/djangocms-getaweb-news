@@ -40,4 +40,4 @@ def newsitem_url(context, slug):
 @register.simple_tag(takes_context=True)
 def newscategory_url(context, category_id):
     return reverse(context['request'], 'news-category', kwargs={
-        'category': category_id })
+        'category': category_id})

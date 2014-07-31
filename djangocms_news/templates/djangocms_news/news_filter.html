@@ -1,0 +1,15 @@
+{% load cmsnews %}
+
+<h1>Filter</h1>
+<div class="list-group filter-group">
+{% if set_category %}
+    {% for category in categories %}
+        <a href="{% newscategory_url category_id=category.pk %}" class="list-group-item {{ filter_tag }}-{{ category.pk }} {% if set_category == category.pk|stringformat:"s" %}active{% endif %}">
+            <i class="fa {% if set_category == category.pk|stringformat:"s" %}fa-check-square-o{% else %}fa-square-o{% endif %} fa-fw"></i><span>&nbsp; {{ category.title }}</span></a>
+    {% endfor %}
+{% else %}
+    {% for category in categories %}
+        <a href="{% newscategory_url category_id=category.item.pk %}" class="list-group-item {{ filter_tag }}-{{ category.item.pk }} active"><i class="fa fa-check-square-o fa-fw"></i><span>&nbsp; {{ category.item.title }}</span></a>
+    {% endfor %}
+{% endif %}
+</div>
