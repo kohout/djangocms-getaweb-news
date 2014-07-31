@@ -11,6 +11,7 @@ from easy_thumbnails.exceptions import InvalidImageFormatError
 from tinymce.models import HTMLField
 import datetime
 
+
 class NewsCategory(models.Model):
     title = models.CharField(
         max_length=150,
@@ -65,7 +66,7 @@ class NewsItem(models.Model):
         verbose_name=_(u'Abstract of this news article'))
 
     content = HTMLField(
-        blank=True,
+        blank=True, null=True,
         verbose_name=_(u'Content'))
 
     news_categories = models.ManyToManyField(
@@ -75,6 +76,14 @@ class NewsItem(models.Model):
 
     target_page = models.ForeignKey(Page,
         verbose_name=_(u'Target Page'))
+
+    price = models.TextField(
+        blank=True, null=True,
+        verbose_name=_(u'Highlighted price'))
+
+    youtube_id = models.TextField(
+        blank=True, null=True,
+        verbose_name=_(u'ID of embedded youtube video'))
 
     additional_images_pagination = models.PositiveIntegerField(
         default=1,

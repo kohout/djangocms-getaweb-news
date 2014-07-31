@@ -45,6 +45,7 @@ class NewsItemAdmin(admin.ModelAdmin):
                 ('title', 'slug', ),
                 ('abstract', ),
                 ('content', ),
+                ('price', 'youtube_id'),
                 ('additional_images_pagination',
                  'additional_images_speed', ),
             ),

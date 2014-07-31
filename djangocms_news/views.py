@@ -44,7 +44,7 @@ class NewsListView(NewsMixin, ListView):
     A complete list of the news items
     """
     model = NewsItem
-    template_name = 'djangocms_news/list.html'
+    template_name = 'djangocms_news/team_list.html'
 
 
 class NewsDetailView(NewsMixin, DetailView):
