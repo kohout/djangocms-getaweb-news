@@ -19,9 +19,9 @@ class NewsMixin(object):
             # regard only public version
             q = q.filter(target_page=self.request.current_page)
 
-        self.current_category = int(self.kwargs.get('category', 0))
-        if self.current_category > 0:
-            q = q.filter(news_categories__in=[self.current_category])
+        #self.current_category = int(self.kwargs.get('category', 0))
+        #if self.current_category > 0:
+        #    q = q.filter(news_categories__in=[self.current_category])
         return q
 
     def get_news_categories(self):
