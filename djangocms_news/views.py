@@ -60,7 +60,7 @@ class NewsListView(NewsMixin, ListView):
 
     def get_context_data(self, *args, **kwargs):
         ctx = super(NewsListView, self).get_context_data(*args, **kwargs)
-        if 'category' in self.kwargs:
+        if self.request.GET.get('category'):
             filter_categories = self.request.GET.get('category')
             filter_categories = filter_categories.split(',')
             ctx['filter_categories'] = filter_categories
