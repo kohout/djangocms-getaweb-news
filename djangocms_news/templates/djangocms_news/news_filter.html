@@ -2,16 +2,10 @@
 
 <h1>Filter</h1>
 <div class="list-group filter-group">
-{% if set_category %}
-    {% for category in categories %}
-        <a href="{% newscategory_url category_id=category.pk %}" class="list-group-item {{ filter_tag }}-{{ category.pk }} {% if set_category == category.pk|stringformat:"s" %}active{% endif %}">
-            <i class="fa {% if set_category == category.pk|stringformat:"s" %}fa-check-square-o{% else %}fa-square-o{% endif %} fa-fw"></i><span>&nbsp; {{ category.title }}</span><span class="badge">{{ category.newsitems_count }}</span></a>
-    {% endfor %}
-{% else %}
-    {% for category in categories %}
-        <a href="{% newscategory_url category_id=category.item.pk %}" class="list-group-item {{ filter_tag }}-{{ category.item.pk }} active"><i class="fa fa-check-square-o fa-fw"></i><span>&nbsp; {{ category.item.title }}</span><span class="badge">{{ category.item.newsitems_count }}</span></a>
-    {% endfor %}
-{% endif %}
+{% for cat in categories %}
+    <a href="{% newscategory_url cat.item.pk %}" class="list-group-item {{ filter_tag }}-{{ cat.item.pk }} {% if cat.item.pk|stringformat:"s" in filter_categories %}active{% endif %}">
+        <i class="fa {% if cat.item.pk|stringformat:"s" in filter_categories %}fa-check-square-o{% else %}fa-square-o{% endif %} fa-fw"></i><span>&nbsp; {{ cat.item.title }}</span><span class="badge">{{ cat.newsitems_count }}</span></a>
+{% endfor %}
 
 <a href="{% newsindex_url %}" class="filter-all btn btn-primary"><i class="fa fa-check-square-o fa-fw"></i>Alle</a>
 <a href="{% newsindex_url %}" class="filter-none btn btn-primary"><i class="fa fa-square-o fa-fw"></i>Keine</a>

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.db.models import Q
 from django.core.urlresolvers import resolve
+from django.db.models.query_utils import Q
 from django.views.generic import ListView, DetailView
 from .models import NewsItem, NewsCategory
+from .filters import NewsItemFilter
 
 
 class NewsMixin(object):
@@ -25,8 +27,9 @@ class NewsMixin(object):
         return q
 
     def get_news_categories(self):
+
         news_categories = NewsCategory.objects.filter(
-            newsitem__target_page=self.request.current_page
+            Q(newsitem__target_page=self.request.current_page) | Q(newsitem__target_page=self.request.current_page)
         ).distinct().order_by('title')
         return [{
             'item': n,
@@ -37,6 +40,8 @@ class NewsMixin(object):
     def get_context_data(self, *args, **kwargs):
         ctx = super(NewsMixin, self).get_context_data(*args, **kwargs)
         ctx['categories'] = self.get_news_categories()
+        if 'category' in self.kwargs:
+            ctx['category'] = self.kwargs['category']
         return ctx
 
 
@@ -46,19 +51,19 @@ class NewsListView(NewsMixin, ListView):
     """
     model = NewsItem
     template_name = 'djangocms_news/news_index.html'
+    paginate_by = 25
+    filter_class = NewsItemFilter
 
-
-class NewsCategoryView(NewsMixin, ListView):
-    """
-    A list of news items in a category
-    """
-    model = NewsItem
-    template_name = 'djangocms_news/news_category.html'
+    def get_queryset(self):
+        q = super(NewsListView, self).get_queryset()
+        return self.filter_class(self.request.GET, q)
 
     def get_context_data(self, *args, **kwargs):
-        ctx = super(NewsCategoryView, self).get_context_data(*args, **kwargs)
-        ctx['categories'] = NewsCategory.objects.all().distinct().order_by('title')
-        ctx['category'] = self.kwargs['category']
+        ctx = super(NewsListView, self).get_context_data(*args, **kwargs)
+        if 'category' in self.kwargs:
+            filter_categories = self.request.GET.get('category')
+            filter_categories = filter_categories.split(',')
+            ctx['filter_categories'] = filter_categories
         return ctx
 
 

@@ -8,8 +8,13 @@ from django.utils.timezone import utc
 from easy_thumbnails.fields import ThumbnailerImageField
 from easy_thumbnails.files import get_thumbnailer
 from easy_thumbnails.exceptions import InvalidImageFormatError
+from easy_thumbnails.signal_handlers import generate_aliases_global
+from easy_thumbnails.signals import saved_file
 from tinymce.models import HTMLField
 import datetime
+
+
+saved_file.connect(generate_aliases_global)
 
 
 class NewsCategory(models.Model):
