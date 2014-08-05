@@ -29,7 +29,7 @@ class NewsMixin(object):
     def get_news_categories(self):
 
         news_categories = NewsCategory.objects.filter(
-            Q(newsitem__target_page=self.request.current_page) | Q(newsitem__target_page=self.request.current_page)
+            newsitem__target_page=self.request.current_page
         ).distinct().order_by('title')
         return [{
             'item': n,
@@ -64,6 +64,8 @@ class NewsListView(NewsMixin, ListView):
             filter_categories = self.request.GET.get('category')
             filter_categories = filter_categories.split(',')
             ctx['filter_categories'] = filter_categories
+        else:
+            ctx['show_all'] = True
         return ctx
 
 
