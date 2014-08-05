@@ -46,4 +46,8 @@
     {% for category in object.news_categories.all %}
         <a href="{% newscategory_url category.pk %}">Zurück zur News-Kategorie "{{ category.title }}"</a><br />
     {% endfor %}
+
+    <a href="{% newsitem_url previous.slug %}"><i class="fa fa-angle-double-left"></i>&nbsp;Vorheriger Newsbeitrag</a>
+    &nbsp; | &nbsp;
+    <a href="{% newsitem_url next.slug %}">Nächster Newsbeitrag&nbsp;<i class="fa fa-angle-double-right"></i></a>
 {% endblock %}
