@@ -6,7 +6,7 @@ from .menu import NewsCategoryMenu
 class NewsApp(CMSApp):
     name = _('News Module')
     urls = ['djangocms_news.urls']
-    app_name = 'cmsnews'
+    app_name = 'khw-news'
     menus = [NewsCategoryMenu]
 
 apphook_pool.register(NewsApp)

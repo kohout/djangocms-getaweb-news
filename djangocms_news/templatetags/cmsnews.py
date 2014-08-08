@@ -34,23 +34,23 @@ def more_images(news_item, image_format):
 
 
 @register.simple_tag(takes_context=True)
-def newsindex_url(context):
-    return reverse(context['request'], 'news-index')
+def newsindex_url(context, prefix=None, app_name=None,):
+    return reverse(context['request'], prefix, app_name, 'news-index')
 
 
 @register.simple_tag(takes_context=True)
-def newsitem_url(context, slug):
-    return reverse(context['request'], 'news-detail', kwargs={
+def newsitem_url(context, slug, prefix=None, app_name=None,):
+    return reverse(context['request'], prefix, app_name, 'news-detail', kwargs={
         'slug': slug})
 
 
 @register.simple_tag(takes_context=True)
-def newscategory_url(context, get):
-    return "%s?category=%s" % (reverse(context['request'], 'news-index'), get)
+def newscategory_url(context, get, prefix=None, app_name=None):
+    return "%s?category=%s" % (reverse(context['request'], prefix, app_name, 'news-index'), get)
 
 @register.simple_tag(takes_context=True)
-def page_pagination(context, category=None, page=1):
+def page_pagination(context, category=None, page=1, prefix=None, app_name=None):
     if category:
-        return "%s?category=%s&page=%s" % (reverse(context['request'], 'news-index'), category, page)
+        return "%s?category=%s&page=%s" % (reverse(context['request'], prefix, app_name, 'news-index'), category, page)
     else:
-        return "%s?page=%s" % (reverse(context['request'], 'news-index'), page)
+        return "%s?page=%s" % (reverse(context['request'], prefix, app_name, 'news-index'), page)
