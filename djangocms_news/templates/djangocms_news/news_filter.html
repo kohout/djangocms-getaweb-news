@@ -7,6 +7,6 @@
         <i class="fa {% if cat.item.pk|stringformat:"s" in filter_categories or show_all %}fa-check-square-o{% else %}fa-square-o{% endif %} fa-fw"></i><span>&nbsp; {{ cat.item.title }}</span><span class="badge">{{ cat.newsitems_count }}</span></a>
 {% endfor %}
 
-<a href="{% newsindex_url %}" class="filter-all btn btn-primary"><i class="fa fa-check-square-o fa-fw"></i>Alle</a>
-<a href="{% newsindex_url %}" class="filter-none btn btn-primary"><i class="fa fa-square-o fa-fw"></i>Keine</a>
+<a href="{% newsindex_url %}" class="filter-all btn btn-secondary"><i class="fa fa-check-square-o fa-fw"></i>Alle</a>
+<a href="{% newsindex_url %}" class="filter-none btn btn-secondary"><i class="fa fa-square-o fa-fw"></i>Keine</a>
 </div>

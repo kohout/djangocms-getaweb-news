@@ -27,9 +27,13 @@ class NewsMixin(object):
         return q
 
     def get_news_categories(self):
-
+        # target page via importer is the edit page, because it looks
+        # for the first page with the id 'news' (which is the edit page)
+        # therefore we filter for news categories that have the current page id
+        # OR the current page id + 1
         news_categories = NewsCategory.objects.filter(
-            newsitem__target_page=self.request.current_page
+            Q(newsitem__target_page=self.request.current_page.pk) |
+            Q(newsitem__target_page=self.request.current_page.pk + 1)
         ).distinct().order_by('title')
         return [{
             'item': n,
