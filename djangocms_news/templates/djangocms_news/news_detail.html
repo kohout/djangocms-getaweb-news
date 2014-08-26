@@ -13,7 +13,7 @@
         <script src="{{ STATIC_URL }}js/lightbox.min.js"></script>
     {% endaddtoblock %}
 
-    <h1>{{ object.title }} {% if object.price %}<p class="bg-primary news-price">{{ object.price }}</p>{% endif %}</h1>
+    <h1>{{ object.title }} {% if object.price %}<p class="bg-primary header-price">{{ object.price }}</p>{% endif %}</h1>
     <small>{{ object.news_date }}</small>
     <h4>{{ object.abstract }}</h4>
 
@@ -32,7 +32,7 @@
     {% endif %}
 
     {% if object.get_first_image != None %}
-        <div class="news-images">
+        <div class="more-images">
             {% for newsimage in object.newsimage_set.all %}
                 <a href="{{ MEDIA_URL }}{{ newsimage.image }}" data-lightbox="{{ object.title }}">
                     <img src="{{ newsimage.image|thumbnail_url:'thumb' }}" alt="{{ object.title }}" />
