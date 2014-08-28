@@ -9,6 +9,15 @@ from .filters import NewsItemFilter
 
 class NewsMixin(object):
     current_category = 0
+    current_page = None
+
+    def get_current_page(self):
+        if self.current_page:
+            return self.current_page
+        self.current_page = self.request.current_page
+        if self.current_page.publisher_is_draft:
+            self.current_page = self.current_page.publisher_public
+        return self.current_page
 
     def get_queryset(self):
         q = NewsItem.objects.filter(active=True)
@@ -27,13 +36,8 @@ class NewsMixin(object):
         return q
 
     def get_news_categories(self):
-        # target page via importer is the edit page, because it looks
-        # for the first page with the id 'news' (which is the edit page)
-        # therefore we filter for news categories that have the current page id
-        # OR the current page id + 1
         news_categories = NewsCategory.objects.filter(
-            Q(newsitem__target_page=self.request.current_page.pk) |
-            Q(newsitem__target_page=self.request.current_page.pk + 1)
+            newsitem__target_page=self.get_current_page()
         ).distinct().order_by('title')
         return [{
             'item': n,
