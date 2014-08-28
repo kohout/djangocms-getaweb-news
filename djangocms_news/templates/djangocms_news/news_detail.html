@@ -13,13 +13,22 @@
         <script src="{{ STATIC_URL }}js/lightbox.min.js"></script>
     {% endaddtoblock %}
 
-    <h1>{{ object.title }} {% if object.price %}<p class="bg-primary news-price">{{ object.price }}</p>{% endif %}</h1>
-    <small>{{ object.news_date }}</small>
+    <div class="pull-right" style="padding-top: 22px;">
+    {% for category in object.news_categories.all %}
+        <a class="btn btn-primary btn-sm"
+           href="{% newscategory_url category.pk %}">{{ category.title }}</a>
+    {% endfor %}
+    </div>
+
+    <h1>{{ object.title }}</h1>
+    <small class="align-right">{{ object.news_date }}</small>
     <h4>{{ object.abstract }}</h4>
 
+    {% if object.content %}
     <div>
       {{ object.content }}
     </div>
+    {% endif %}
 
     {% if object.youtube_id %}
         <div class="ytplayer">
@@ -32,22 +41,31 @@
     {% endif %}
 
     {% if object.get_first_image != None %}
-        <div class="news-images">
-            {% for newsimage in object.newsimage_set.all %}
+    <div id="masonry-container">
+        {% for newsimage in object.newsimage_set.all %}
+            <div class="masonry-item news-image">
                 <a href="{{ MEDIA_URL }}{{ newsimage.image }}" data-lightbox="{{ object.title }}">
                     <img src="{{ newsimage.image|thumbnail_url:'thumb' }}" alt="{{ object.title }}" />
                 </a>
-            {% endfor %}
-        </div>
+            </div>
+        {% endfor %}
+    </div>
     {% endif %}
 
     <div class="clearfix"></div>
 
-    {% for category in object.news_categories.all %}
-        <a href="{% newscategory_url category.pk %}">Zurück zur News-Kategorie "{{ category.title }}"</a><br />
-    {% endfor %}
+    <hr>
 
-    <a href="{% newsitem_url previous.slug %}"><i class="fa fa-angle-double-left"></i>&nbsp;Vorheriger Newsbeitrag</a>
-    &nbsp; | &nbsp;
-    <a href="{% newsitem_url next.slug %}">Nächster Newsbeitrag&nbsp;<i class="fa fa-angle-double-right"></i></a>
+    <a href="{% newsitem_url next.slug %}"
+       class="pull-right btn btn-secondary btn-lg"
+       title="{{ next.title }}">
+       Weiter
+      <i class="fa fa-angle-double-right"></i>
+    </a>
+    <a href="{% newsitem_url previous.slug %}"
+       class="btn btn-secondary btn-lg"
+       title="{{ previous.title }}">
+      <i class="fa fa-angle-double-left"></i>
+      Zurück
+    </a>
 {% endblock %}
