@@ -1,6 +1,7 @@
 from cms.models.pluginmodel import CMSPlugin
 from cms.models.pagemodel import Page
 from django.conf import settings
+from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.db import models
 from django.utils.translation import ugettext as _
@@ -79,7 +80,7 @@ class NewsItem(models.Model):
         blank=True, null=True,
         verbose_name=_(u'Selected news categories'))
 
-    target_page = models.ForeignKey(Page,
+    target_page = models.ManyToManyField(Page,
         verbose_name=_(u'Target Page'))
 
     price = models.TextField(
@@ -115,8 +116,12 @@ class NewsItem(models.Model):
         return self.newsimage_set.count() > 1
 
     def get_absolute_url(self):
-        view_name = '%s:news-detail' % self.target_page.application_namespace
-        return reverse(view_name, kwargs={'slug': self.slug})
+        try:
+            target_page = self.target_page.get(pk=settings.SITE_ID)
+            view_name = '%s:news-detail' % target_page.application_namespace
+            return reverse(view_name, kwargs={'slug': self.slug})
+        except Site.DoesNotExist:
+            return '#'
 
     class Meta:
         ordering = ('-news_date', )
