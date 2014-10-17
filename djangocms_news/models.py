@@ -117,7 +117,7 @@ class NewsItem(models.Model):
 
     def get_absolute_url(self):
         try:
-            target_page = self.target_page.get(pk=settings.SITE_ID)
+            target_page = self.target_page.get(site=settings.SITE_ID)
             view_name = '%s:news-detail' % target_page.application_namespace
             return reverse(view_name, kwargs={'slug': self.slug})
         except Site.DoesNotExist:
