@@ -3,6 +3,7 @@ from django.db.models import Q
 from django.core.urlresolvers import resolve
 from django.db.models.query_utils import Q
 from django.views.generic import ListView, DetailView
+from rest_framework import viewsets, serializers
 from .models import NewsItem, NewsCategory
 from .filters import NewsItemFilter
 
@@ -111,3 +112,14 @@ class NewsDetailView(NewsMixin, DetailView):
         ctx['next'] = self.get_next()
         ctx['previous'] = self.get_previous()
         return ctx
+
+
+class NewsSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = NewsItem
+        fields = ('title', )
+
+
+class NewsViewSet(viewsets.ModelViewSet):
+    queryset = NewsItem.objects.all()
+    serializer_class = NewsSerializer

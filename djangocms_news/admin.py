@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.utils.translation import ugettext as _
 from .models import NewsCategory, NewsItem, NewsImage
 from .forms import NewsItemForm
+from django.conf import settings
 
 from adminsortable.admin import SortableInlineAdminMixin
 
@@ -32,25 +33,49 @@ class NewsItemAdmin(admin.ModelAdmin):
     list_display_links = ('render_preview', 'title', 'news_date', )
     readonly_fields = ('render_preview', )
     prepopulated_fields = {'slug': ('title',)}
-    fieldsets = (
-        (_(u'Common'), {
-            'fields': (
-                ('active', ),
-                ('news_date', ),
-                ('target_page', 'news_categories', ),
-            )
-        }),
-        (_(u'Content'), {
-            'fields': (
-                ('title', 'slug', ),
-                ('abstract', ),
-                ('content', ),
-                ('price', 'youtube_id'),
-                ('additional_images_pagination',
-                 'additional_images_speed', ),
-            ),
-        })
-    )
+    if hasattr(settings, 'NEWS_REMOTE_PUBLISHING')\
+            and hasattr(settings, 'NEWS_REMOTE_ROLE')\
+            and settings.NEWS_REMOTE_ROLE is 'MASTER':
+        fieldsets = (
+            (_(u'Common'), {
+                'fields': (
+                    ('active', ),
+                    ('news_date', ),
+                    ('target_page', 'news_categories', ),
+                    ('remote_publishing', ),
+                )
+            }),
+            (_(u'Content'), {
+                'fields': (
+                    ('title', 'slug', ),
+                    ('abstract', ),
+                    ('content', ),
+                    ('price', 'youtube_id'),
+                    ('additional_images_pagination',
+                     'additional_images_speed', ),
+                ),
+            })
+        )
+    else:
+        fieldsets = (
+            (_(u'Common'), {
+                'fields': (
+                    ('active', ),
+                    ('news_date', ),
+                    ('target_page', 'news_categories', ),
+                )
+            }),
+            (_(u'Content'), {
+                'fields': (
+                    ('title', 'slug', ),
+                    ('abstract', ),
+                    ('content', ),
+                    ('price', 'youtube_id'),
+                    ('additional_images_pagination',
+                     'additional_images_speed', ),
+                ),
+            })
+        )
     inlines = [NewsImageInline]
 
     raw_id_fields = ('news_categories', )
@@ -72,5 +97,12 @@ class NewsItemAdmin(admin.ModelAdmin):
     render_preview.allow_tags = True
     render_preview.short_description = _(u'Preview')
 
-admin.site.register(NewsCategory, NewsCategoryAdmin)
-admin.site.register(NewsItem, NewsItemAdmin)
+if (not hasattr(settings, 'NEWS_REMOTE_PUBLISHING'))\
+        or (hasattr(settings, 'NEWS_REMOTE_PUBLISHING') and settings.NEWS_REMOTE_PUBLISHING is False)\
+        or (hasattr(settings, 'NEWS_REMOTE_PUBLISHING')
+            and settings.NEWS_REMOTE_PUBLISHING is True
+            and hasattr(settings, 'NEWS_REMOTE_ROLE')
+            and settings.NEWS_REMOTE_ROLE is 'MASTER'):
+
+    admin.site.register(NewsCategory, NewsCategoryAdmin)
+    admin.site.register(NewsItem, NewsItemAdmin)

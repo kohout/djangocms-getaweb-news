@@ -101,6 +101,15 @@ class NewsItem(models.Model):
         help_text=_(
             u'This option is relevant, if you choose the slideshow-mode'),
         verbose_name=_(u'Speed of transition'))
+    
+    if hasattr(settings, 'NEWS_REMOTE_PUBLISHING')\
+            and hasattr(settings, 'NEWS_REMOTE_ROLE')\
+            and settings.NEWS_REMOTE_ROLE is 'MASTER':
+        remote_publishing = models.URLField(
+            default='',
+            choices=settings.NEWS_REMOTE_PUBLISHING_CHOICES,
+            verbose_name=_(u'Publish to')
+        )
 
     def get_first_image(self):
         images = self.newsimage_set.all()
@@ -162,6 +171,8 @@ class NewsTeaser(CMSPlugin):
             items = items.filter(news_date__lte=now).order_by('-news_date')
         else:
             items = items.filter(news_date__gte=now).order_by('news_date')
+
+        print items
         return items
 
     def __unicode__(self):
