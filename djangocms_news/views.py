@@ -117,7 +117,8 @@ class NewsDetailView(NewsMixin, DetailView):
 class NewsSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = NewsItem
-        fields = ('title', )
+        fields = ('title', 'slug', 'active', 'abstract', 'content', 'news_date', 'additional_images_pagination',
+                  'additional_images_speed')
 
 
 class NewsViewSet(viewsets.ModelViewSet):

@@ -18,6 +18,33 @@ import datetime
 saved_file.connect(generate_aliases_global)
 
 
+def remote_publishing():
+    """
+    Wrapper function to determine wether remote publishing is activated or not
+
+    :return: Boolean
+    """
+    return hasattr(settings, 'NEWS_REMOTE_PUBLISHING')
+
+
+def is_master():
+    """
+    Wrapper function to determine role. Returns false if remote publishing is not activated
+
+    :return: Boolean
+    """
+    return remote_publishing() and hasattr(settings, 'NEWS_REMOTE_ROLE') and settings.NEWS_REMOTE_ROLE is 'MASTER'
+
+
+def is_slave():
+    """
+    Wrapper function to determine role. Returns false if remote publishing is not activated
+
+    :return: Boolean
+    """
+    return remote_publishing() and hasattr(settings, 'NEWS_REMOTE_ROLE') and settings.NEWS_REMOTE_ROLE is 'SLAVE'
+
+
 class NewsCategory(models.Model):
     title = models.CharField(
         max_length=150,
@@ -101,15 +128,15 @@ class NewsItem(models.Model):
         help_text=_(
             u'This option is relevant, if you choose the slideshow-mode'),
         verbose_name=_(u'Speed of transition'))
-    
-    if hasattr(settings, 'NEWS_REMOTE_PUBLISHING')\
-            and hasattr(settings, 'NEWS_REMOTE_ROLE')\
-            and settings.NEWS_REMOTE_ROLE is 'MASTER':
+
+# region remote_publishing
+    if is_master():
         remote_publishing = models.URLField(
             default='',
             choices=settings.NEWS_REMOTE_PUBLISHING_CHOICES,
             verbose_name=_(u'Publish to')
         )
+# endregion
 
     def get_first_image(self):
         images = self.newsimage_set.all()
