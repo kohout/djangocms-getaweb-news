@@ -3,9 +3,10 @@ from django.db.models import Q
 from django.core.urlresolvers import resolve
 from django.db.models.query_utils import Q
 from django.views.generic import ListView, DetailView
-from rest_framework import viewsets, serializers
-from .models import NewsItem, NewsCategory
+from rest_framework import viewsets
+from .models import NewsItem, NewsCategory, NewsSerializer
 from .filters import NewsItemFilter
+from rest_framework import permissions
 
 
 class NewsMixin(object):
@@ -114,13 +115,7 @@ class NewsDetailView(NewsMixin, DetailView):
         return ctx
 
 
-class NewsSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = NewsItem
-        fields = ('title', 'slug', 'active', 'abstract', 'content', 'news_date', 'additional_images_pagination',
-                  'additional_images_speed')
-
-
 class NewsViewSet(viewsets.ModelViewSet):
     queryset = NewsItem.objects.all()
     serializer_class = NewsSerializer
+    permission_classes = (permissions.AllowAny, )

@@ -1,9 +1,11 @@
 from cms.models.pluginmodel import CMSPlugin
 from cms.models.pagemodel import Page
 from django.conf import settings
-from django.contrib.sites.models import Site
+from requests.exceptions import HTTPError
+from .fields import MultiSelectField
 from django.core.urlresolvers import reverse
 from django.db import models
+from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext as _
 from django.utils.timezone import utc
 from easy_thumbnails.fields import ThumbnailerImageField
@@ -12,7 +14,12 @@ from easy_thumbnails.exceptions import InvalidImageFormatError
 from easy_thumbnails.signal_handlers import generate_aliases_global
 from easy_thumbnails.signals import saved_file
 from tinymce.models import HTMLField
+from rest_framework import serializers
 import datetime
+import urllib
+import urllib2
+import urllib3
+
 
 
 saved_file.connect(generate_aliases_global)
@@ -20,14 +27,14 @@ saved_file.connect(generate_aliases_global)
 
 def remote_publishing():
     """
-    Wrapper function to determine wether remote publishing is activated or not
+    Wrapper function to determine whether remote publishing is activated or not
 
     :return: Boolean
     """
     return hasattr(settings, 'NEWS_REMOTE_PUBLISHING')
 
 
-def is_master():
+def remote_publishing_master():
     """
     Wrapper function to determine role. Returns false if remote publishing is not activated
 
@@ -36,7 +43,7 @@ def is_master():
     return remote_publishing() and hasattr(settings, 'NEWS_REMOTE_ROLE') and settings.NEWS_REMOTE_ROLE is 'MASTER'
 
 
-def is_slave():
+def remote_publishing_slave():
     """
     Wrapper function to determine role. Returns false if remote publishing is not activated
 
@@ -65,6 +72,9 @@ class NewsCategory(models.Model):
         verbose_name = _(u'News Category')
         verbose_name_plural = _(u'News Categories')
 
+REMOTE_FIELDS = ('title', 'slug', 'active', 'abstract', 'content', 'news_date', 'additional_images_pagination',
+                     'additional_images_speed')
+
 
 class NewsItem(models.Model):
     ADDITIONAL_IMAGES_PAGINATION_CHOICES = (
@@ -72,6 +82,7 @@ class NewsItem(models.Model):
         (1, _(u'Pagination')),
         (2, _(u'Slideshow')),
     )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name=_(u'Created at'))
@@ -107,7 +118,8 @@ class NewsItem(models.Model):
         blank=True, null=True,
         verbose_name=_(u'Selected news categories'))
 
-    target_page = models.ManyToManyField(Page,
+    target_page = models.ManyToManyField(
+        Page,
         verbose_name=_(u'Target Page'))
 
     price = models.TextField(
@@ -130,10 +142,12 @@ class NewsItem(models.Model):
         verbose_name=_(u'Speed of transition'))
 
 # region remote_publishing
-    if is_master():
-        remote_publishing = models.URLField(
+    if remote_publishing_master():
+        remote_publishing = MultiSelectField(
+            blank=True, null=True,
             default='',
             choices=settings.NEWS_REMOTE_PUBLISHING_CHOICES,
+            max_length=10000,
             verbose_name=_(u'Publish to')
         )
 # endregion
@@ -152,12 +166,54 @@ class NewsItem(models.Model):
         return self.newsimage_set.count() > 1
 
     def get_absolute_url(self):
-        try:
-            target_page = self.target_page.get(site=settings.SITE_ID)
-            view_name = '%s:news-detail' % target_page.application_namespace
-            return reverse(view_name, kwargs={'slug': self.slug})
-        except Site.DoesNotExist:
+        target_page = self.target_page.filter(site=settings.SITE_ID).first()
+        if target_page is None:
             return '#'
+        view_name = '%s:news-detail' % target_page.application_namespace
+        return reverse(view_name, kwargs={'slug': self.slug})
+
+    def save(self, *args, **kwargs):
+
+        if not self.slug:
+            self.slug = slugify(self.title)
+
+        if remote_publishing_master():
+            for remote_host in self.remote_publishing:
+                if remote_host == 'localhost:8001':
+                    continue
+                print "Sending News Item..."
+                """
+                json = dict()
+                for key in REMOTE_FIELDS:
+                    json[key] = str(getattr(self, key))
+                json['news_date'] = "2014-04-13T15:23:01"
+                json['active'] = False
+                #print data
+                #json = serializers.serialize("json", [self, ], fields=REMOTE_FIELDS)
+                # print json
+                #
+                """
+
+                json = NewsSerializer(self).data
+                """
+                print json
+
+                try:
+                    r = urllib2.Request(remote_host, data=str(json),
+                                        headers={'Content-Type': 'application/json'})
+                    print r.data
+                    resp = urllib2.urlopen(r)
+                except HTTPError:
+                    code = resp.getcode()
+                    data = resp.read()
+                    print data
+                """
+
+                http = urllib3.PoolManager()
+                http.urlopen('POST', remote_host, headers={'Content-Type':'application/json'}, body=str(json))
+
+
+        return super(NewsItem, self).save(*args, **kwargs)
 
     class Meta:
         ordering = ('-news_date', )
@@ -187,7 +243,8 @@ class NewsTeaser(CMSPlugin):
         default=NEWS_ORDERING_PAST_DESC,
         verbose_name=_(u'Ordering/Selection of Articles'))
 
-    target_page = models.ForeignKey(Page,
+    target_page = models.ForeignKey(
+        Page,
         verbose_name=_(u'Target Page'))
 
     def get_items(self):
@@ -236,7 +293,8 @@ class NewsImage(models.Model):
     ordering = models.PositiveIntegerField(
         verbose_name=_(u'Ordering'))
 
-    news_item = models.ForeignKey(NewsItem,
+    news_item = models.ForeignKey(
+        NewsItem,
         verbose_name=_(u'News Item'))
 
     def get_title(self):
@@ -295,3 +353,9 @@ class NewsImage(models.Model):
         ordering = ['ordering']
         verbose_name = _(u'News Image')
         verbose_name_plural = _(u'News Images')
+
+
+class NewsSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = NewsItem
+        fields = REMOTE_FIELDS
