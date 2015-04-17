@@ -8,14 +8,16 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        # Adding field 'NewsImage.remote_id'
+        db.add_column(u'djangocms_news_newsimage', 'remote_id',
+                      self.gf('django.db.models.fields.CharField')(db_index=True, max_length=100, null=True, blank=True),
+                      keep_default=False)
 
-        # Changing field 'NewsItem.remote_publishing'
-        db.alter_column(u'djangocms_news_newsitem', 'remote_publishing', self.gf('djangocms_news.fields.MultiSelectField')(max_length=10000, null=True))
 
     def backwards(self, orm):
+        # Deleting field 'NewsImage.remote_id'
+        db.delete_column(u'djangocms_news_newsimage', 'remote_id')
 
-        # Changing field 'NewsItem.remote_publishing'
-        db.alter_column(u'djangocms_news_newsitem', 'remote_publishing', self.gf('djangocms_news.fields.MultiSelectField')(max_length=10000))
 
     models = {
         'cms.cmsplugin': {
@@ -69,7 +71,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'Placeholder'},
             'default_width': ('django.db.models.fields.PositiveSmallIntegerField', [], {'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'slot': ('django.db.models.fields.CharField', [], {'max_length': '255', 'db_index': 'True'})
+            'slot': ('django.db.models.fields.CharField', [], {'max_length': '50', 'db_index': 'True'})
         },
         u'djangocms_news.newscategory': {
             'Meta': {'object_name': 'NewsCategory'},
@@ -85,6 +87,7 @@ class Migration(SchemaMigration):
             'image_width': ('django.db.models.fields.PositiveSmallIntegerField', [], {'default': '0', 'null': 'True'}),
             'news_item': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['djangocms_news.NewsItem']"}),
             'ordering': ('django.db.models.fields.PositiveIntegerField', [], {}),
+            'remote_id': ('django.db.models.fields.CharField', [], {'db_index': 'True', 'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'title': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '150', 'blank': 'True'})
         },
         u'djangocms_news.newsitem': {
@@ -99,6 +102,7 @@ class Migration(SchemaMigration):
             'news_categories': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'to': u"orm['djangocms_news.NewsCategory']", 'null': 'True', 'blank': 'True'}),
             'news_date': ('django.db.models.fields.DateTimeField', [], {}),
             'price': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'remote_id': ('django.db.models.fields.CharField', [], {'db_index': 'True', 'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'remote_publishing': ('djangocms_news.fields.MultiSelectField', [], {'default': "''", 'max_length': '10000', 'null': 'True', 'blank': 'True'}),
             'slug': ('django.db.models.fields.SlugField', [], {'unique': 'True', 'max_length': '255'}),
             'target_page': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['cms.Page']", 'symmetrical': 'False'}),

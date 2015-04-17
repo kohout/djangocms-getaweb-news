@@ -1,6 +1,6 @@
 from django import forms
 from .fields import MultiSelectFormField
-from .models import NewsItem, remote_publishing_master
+from .models import NewsTeaser, NewsItem, remote_publishing_master
 from cms.models.pagemodel import Page
 from django.conf import settings
 
@@ -23,13 +23,23 @@ class TextMultiField(forms.MultipleChoiceField):
     widget = TextCheckboxSelectMultiple
 
     def validate(self, value):
-        print "GGGGGRRRR"
         pass
 
     def clean(self, value):
-        print "BBBB"
         val = super(TextMultiField, self).clean(value)
         return u",".join(val)
+
+
+class NewsTeaserForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(NewsTeaserForm, self).__init__(*args, **kwargs)
+        print dir(self.fields['target_page'])
+        self.fields['target_page'].queryset = Page.objects.filter(
+            publisher_is_draft=True)
+
+    class Meta:
+        model = NewsTeaser
 
 
 class NewsItemForm(forms.ModelForm):

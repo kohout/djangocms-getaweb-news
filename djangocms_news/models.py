@@ -14,13 +14,7 @@ from easy_thumbnails.exceptions import InvalidImageFormatError
 from easy_thumbnails.signal_handlers import generate_aliases_global
 from easy_thumbnails.signals import saved_file
 from tinymce.models import HTMLField
-from rest_framework import serializers
-import datetime
-import urllib
-import urllib2
-import urllib3
-
-
+import datetime, slumber
 
 saved_file.connect(generate_aliases_global)
 
@@ -36,20 +30,24 @@ def remote_publishing():
 
 def remote_publishing_master():
     """
-    Wrapper function to determine role. Returns false if remote publishing is not activated
+    Wrapper function to determine role.
+    Returns false if remote publishing is not activated
 
     :return: Boolean
     """
-    return remote_publishing() and hasattr(settings, 'NEWS_REMOTE_ROLE') and settings.NEWS_REMOTE_ROLE is 'MASTER'
+    return remote_publishing() and hasattr(settings, 'NEWS_REMOTE_ROLE') \
+        and settings.NEWS_REMOTE_ROLE is 'MASTER'
 
 
 def remote_publishing_slave():
     """
-    Wrapper function to determine role. Returns false if remote publishing is not activated
+    Wrapper function to determine role.
+    Returns false if remote publishing is not activated
 
     :return: Boolean
     """
-    return remote_publishing() and hasattr(settings, 'NEWS_REMOTE_ROLE') and settings.NEWS_REMOTE_ROLE is 'SLAVE'
+    return remote_publishing() and hasattr(settings, 'NEWS_REMOTE_ROLE') \
+        and settings.NEWS_REMOTE_ROLE is 'SLAVE'
 
 
 class NewsCategory(models.Model):
@@ -72,8 +70,6 @@ class NewsCategory(models.Model):
         verbose_name = _(u'News Category')
         verbose_name_plural = _(u'News Categories')
 
-REMOTE_FIELDS = ('title', 'slug', 'active', 'abstract', 'content', 'news_date', 'additional_images_pagination',
-                     'additional_images_speed')
 
 
 class NewsItem(models.Model):
@@ -142,7 +138,10 @@ class NewsItem(models.Model):
         verbose_name=_(u'Speed of transition'))
 
 # region remote_publishing
-    if remote_publishing_master():
+    if remote_publishing_slave() or remote_publishing_master():
+        remote_id = models.CharField(max_length=100,
+            blank=True, null=True,
+            db_index=True)
         remote_publishing = MultiSelectField(
             blank=True, null=True,
             default='',
@@ -168,52 +167,77 @@ class NewsItem(models.Model):
     def get_absolute_url(self):
         target_page = self.target_page.filter(site=settings.SITE_ID).first()
         if target_page is None:
-            return '#'
+            pages = list(Page.objects.filter(application_urls='NewsApp',
+                publisher_is_draft=False))
+            if len(pages) == 1:
+                target_page = pages[0]
+            else:
+                return '#'
         view_name = '%s:news-detail' % target_page.application_namespace
         return reverse(view_name, kwargs={'slug': self.slug})
 
-    def save(self, *args, **kwargs):
+    def is_remote_host(self, name):
+        if name.startswith('http://'):
+            return True
+        if name.startswith('https://'):
+            return True
+        return False
 
+    def delete(self, *args, **kwargs):
+        # 2. check if this is a master
+        if remote_publishing_master():
+            allconf = settings.NEWS_REMOTE_PUBLISHING_CONF
+            for remote_host, api_conf in allconf.iteritems():
+                api_conf = settings.NEWS_REMOTE_PUBLISHING_CONF[remote_host]
+                if not api_conf['remote']:
+                    continue
+                news_key = ':'.join([api_conf['namespace'], unicode(self.pk)])
+                print news_key
+                api = slumber.API(remote_host, auth=api_conf['auth'])
+                try:
+                    remote_news = api.news(news_key).get()
+                    api.news(news_key).delete()
+                    print "DELETED"
+                except slumber.exceptions.HttpClientError:
+                    print "ALREADY DELETED"
+
+        return super(NewsItem, self).delete(*args, **kwargs)
+
+
+    def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title)
 
+        # 1. save first to get PK
+        result = super(NewsItem, self).save(*args, **kwargs)
+
+        # 2. check if this is a master
         if remote_publishing_master():
-            for remote_host in self.remote_publishing:
-                if remote_host == 'localhost:8001':
+            from djangocms_news.serializers import NewsSerializer
+            allconf = settings.NEWS_REMOTE_PUBLISHING_CONF
+            for remote_host, api_conf in allconf.iteritems():
+                api_conf = settings.NEWS_REMOTE_PUBLISHING_CONF[remote_host]
+                if not api_conf['remote']:
                     continue
-                print "Sending News Item..."
-                """
-                json = dict()
-                for key in REMOTE_FIELDS:
-                    json[key] = str(getattr(self, key))
-                json['news_date'] = "2014-04-13T15:23:01"
-                json['active'] = False
-                #print data
-                #json = serializers.serialize("json", [self, ], fields=REMOTE_FIELDS)
-                # print json
-                #
-                """
-
-                json = NewsSerializer(self).data
-                """
-                print json
-
+                news_key = ':'.join([api_conf['namespace'], unicode(self.pk)])
+                api = slumber.API(remote_host, auth=api_conf['auth'])
+                news_data = NewsSerializer(self).data
+                news_data['remote_id'] = news_key
                 try:
-                    r = urllib2.Request(remote_host, data=str(json),
-                                        headers={'Content-Type': 'application/json'})
-                    print r.data
-                    resp = urllib2.urlopen(r)
-                except HTTPError:
-                    code = resp.getcode()
-                    data = resp.read()
-                    print data
-                """
+                    remote_news = api.news(news_key).get()
+                    if remote_host in self.remote_publishing:
+                        api.news(news_key).patch(news_data)
+                        print "UPDATED"
+                    else:
+                        api.news(news_key).patch({'active': False})
+                        print "DISABLED"
+                except slumber.exceptions.HttpClientError:
+                    if remote_host in self.remote_publishing:
+                        api.news.post(news_data)
+                        print "CREATED"
 
-                http = urllib3.PoolManager()
-                http.urlopen('POST', remote_host, headers={'Content-Type':'application/json'}, body=str(json))
+        return result
 
-
-        return super(NewsItem, self).save(*args, **kwargs)
 
     class Meta:
         ordering = ('-news_date', )
@@ -233,8 +257,8 @@ class NewsTeaser(CMSPlugin):
         max_length=150,
         verbose_name=_(u'Headline of the news list'))
 
-    news_categories = models.ManyToManyField(
-        NewsCategory,
+    news_categories = models.ManyToManyField(NewsCategory,
+        blank=True, null=True,
         verbose_name=_(u'Selected news categories'))
 
     ordering = models.CharField(
@@ -248,8 +272,12 @@ class NewsTeaser(CMSPlugin):
         verbose_name=_(u'Target Page'))
 
     def get_items(self):
-        items = NewsItem.objects.filter(active=True,
-                                        target_page=self.target_page)
+        items = NewsItem.objects.filter(active=True)
+        if not remote_publishing_slave():
+            items = items.filter(target_page=self.target_page)
+            if remote_publishing_master():
+                items = items.filter(remote_publishing__icontains='localhost')
+
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         if self.ordering == self.NEWS_ORDERING_PAST_DESC:
             items = items.filter(news_date__lte=now).order_by('-news_date')
@@ -296,6 +324,11 @@ class NewsImage(models.Model):
     news_item = models.ForeignKey(
         NewsItem,
         verbose_name=_(u'News Item'))
+
+    if remote_publishing_slave() or remote_publishing_master():
+        remote_id = models.CharField(max_length=100,
+            blank=True, null=True,
+            db_index=True)
 
     def get_title(self):
         if self.title:
@@ -349,13 +382,71 @@ class NewsImage(models.Model):
             return self.alt
         return _(u'Image #%s') % self.ordering
 
+    def delete(self, *args, **kwargs):
+        # 2. check if this is a master
+        if remote_publishing_master():
+            allconf = settings.NEWS_REMOTE_PUBLISHING_CONF
+            for remote_host, api_conf in allconf.iteritems():
+                api_conf = settings.NEWS_REMOTE_PUBLISHING_CONF[remote_host]
+                if not api_conf['remote']:
+                    continue
+                news_key = ':'.join([api_conf['namespace'], unicode(self.pk)])
+                print news_key
+                api = slumber.API(remote_host, auth=api_conf['auth'])
+                try:
+                    remote_news = api.news_image(news_key).get()
+                    api.news_image(news_key).delete()
+                    print "DELETED"
+                except slumber.exceptions.HttpClientError:
+                    print "ALREADY DELETED"
+
+        return super(NewsImage, self).delete(*args, **kwargs)
+
+
+    def save(self, *args, **kwargs):
+        # 1. save first to get PK
+        result = super(NewsImage, self).save(*args, **kwargs)
+
+        # 2. check if this is a master
+        if remote_publishing_master():
+            from djangocms_news.serializers import NewsImageSerializer
+            allconf = settings.NEWS_REMOTE_PUBLISHING_CONF
+            for remote_host, api_conf in allconf.iteritems():
+                api_conf = settings.NEWS_REMOTE_PUBLISHING_CONF[remote_host]
+                if not api_conf['remote']:
+                    continue
+                news_key = ':'.join([api_conf['namespace'], unicode(self.pk)])
+                api = slumber.API(remote_host, auth=api_conf['auth'])
+                news_data = NewsImageSerializer(self).data
+                news_data['remote_id'] = news_key
+                parent_key = ':'.join([api_conf['namespace'], unicode(self.news_item.pk)])
+                print news_data
+                try:
+                    parent = api.news(parent_key).get()
+                    parent_pk = parent['pk']
+                    news_data['news_item'] = parent_pk
+                except slumber.exceptions.HttpClientError:
+                    continue
+                try:
+                    remote_news = api.news_image(news_key).get()
+                    self2 = NewsImage.objects.get(pk=self.pk)
+                    img_data = self2.image.read()
+                    api.news_image(news_key).patch(news_data, files={
+                        'image': img_data })
+                    print "UPDATED"
+                except slumber.exceptions.HttpClientError:
+                    if remote_host in self.news_item.remote_publishing:
+                        self2 = NewsImage.objects.get(pk=self.pk)
+                        img_data = self2.image.read()
+                        try:
+                            api.news_image.post(news_data, files={
+                                'image': img_data })
+                        except slumber.exceptions.HttpClientError as e:
+                            print e
+
+        return result
+
     class Meta:
         ordering = ['ordering']
         verbose_name = _(u'News Image')
         verbose_name_plural = _(u'News Images')
-
-
-class NewsSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = NewsItem
-        fields = REMOTE_FIELDS

@@ -3,10 +3,13 @@ from django.db.models import Q
 from django.core.urlresolvers import resolve
 from django.db.models.query_utils import Q
 from django.views.generic import ListView, DetailView
-from rest_framework import viewsets
-from .models import NewsItem, NewsCategory, NewsSerializer
-from .filters import NewsItemFilter
+from djangocms_news.models import NewsItem, NewsCategory, NewsImage, \
+    remote_publishing_slave, remote_publishing_master
+from djangocms_news.filters import NewsItemFilter
+from djangocms_news.serializers import NewsSerializer, NewsImageSerializer
+
 from rest_framework import permissions
+from rest_framework import viewsets
 
 
 class NewsMixin(object):
@@ -23,14 +26,19 @@ class NewsMixin(object):
 
     def get_queryset(self):
         q = NewsItem.objects.filter(active=True)
-        if self.request.user.is_staff or self.request.user.is_superuser:
-            # regard public and private version
-            q = q.filter(
-                Q(target_page=self.request.current_page) |
-                Q(target_page=self.request.current_page.publisher_public))
-        else:
-            # regard only public version
-            q = q.filter(target_page=self.request.current_page)
+        if not remote_publishing_slave():
+            # target page
+            if self.request.user.is_staff or self.request.user.is_superuser:
+                # regard public and private version
+                q = q.filter(
+                    Q(target_page=self.request.current_page) |
+                    Q(target_page=self.request.current_page.publisher_public))
+            else:
+                # regard only public version
+                q = q.filter(target_page=self.request.current_page)
+
+            if remote_publishing_master():
+                q = q.filter(remote_publishing__icontains='localhost')
 
         #self.current_category = int(self.kwargs.get('category', 0))
         #if self.current_category > 0:
@@ -118,4 +126,9 @@ class NewsDetailView(NewsMixin, DetailView):
 class NewsViewSet(viewsets.ModelViewSet):
     queryset = NewsItem.objects.all()
     serializer_class = NewsSerializer
-    permission_classes = (permissions.AllowAny, )
+    lookup_field = 'remote_id'
+
+class NewsImageViewSet(viewsets.ModelViewSet):
+    queryset = NewsImage.objects.all()
+    serializer_class = NewsImageSerializer
+    lookup_field = 'remote_id'
