@@ -22,4 +22,5 @@ class NewsSerializer(serializers.ModelSerializer):
             'additional_images_pagination',
             'additional_images_speed',
             'remote_id',
+            'remote_target_pages',
         )

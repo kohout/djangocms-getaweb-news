@@ -149,6 +149,9 @@ class NewsItem(models.Model):
             max_length=10000,
             verbose_name=_(u'Publish to')
         )
+        remote_target_pages = models.CharField(max_length=2000,
+            blank=True, null=True)
+
 # endregion
 
     def get_first_image(self):
@@ -192,7 +195,6 @@ class NewsItem(models.Model):
                 if not api_conf['remote']:
                     continue
                 news_key = ':'.join([api_conf['namespace'], unicode(self.pk)])
-                print news_key
                 api = slumber.API(remote_host, auth=api_conf['auth'])
                 try:
                     remote_news = api.news(news_key).get()
@@ -208,10 +210,35 @@ class NewsItem(models.Model):
         if not self.slug:
             self.slug = slugify(self.title)
 
-        # 1. save first to get PK
+        # 1. serialize on master side
+        if remote_publishing_master():
+            # serialize
+            # self.target_page.all -> self.remote_target_pages
+            self.remote_target_pages = u','.join([
+                n.application_namespace for n in self.target_page.all()
+            ])
+
+        # 2. save first to get PK
         result = super(NewsItem, self).save(*args, **kwargs)
 
-        # 2. check if this is a master
+        # 3. deserialize on slave side
+        if remote_publishing_slave():
+            # deserialize
+            # self.remote_target_pages -> self.target_page (n:m)
+            if not self.remote_target_pages is None:
+                page_list = []
+                for ns in self.remote_target_pages.split(','):
+                    print list(Page.objects.filter(
+                        publisher_is_draft=False,
+                        application_namespace=ns))
+                    p = Page.objects.filter(
+                        publisher_is_draft=False,
+                        application_namespace=ns).first()
+                    if p:
+                        page_list.append(p)
+                self.target_page = page_list
+
+        # 4. check if this is a master -> push to slave
         if remote_publishing_master():
             from djangocms_news.serializers import NewsSerializer
             allconf = settings.NEWS_REMOTE_PUBLISHING_CONF

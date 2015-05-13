@@ -26,19 +26,18 @@ class NewsMixin(object):
 
     def get_queryset(self):
         q = NewsItem.objects.filter(active=True)
-        if not remote_publishing_slave():
-            # target page
-            if self.request.user.is_staff or self.request.user.is_superuser:
-                # regard public and private version
-                q = q.filter(
-                    Q(target_page=self.request.current_page) |
-                    Q(target_page=self.request.current_page.publisher_public))
-            else:
-                # regard only public version
-                q = q.filter(target_page=self.request.current_page)
+        # target page
+        if self.request.user.is_staff or self.request.user.is_superuser:
+            # regard public and private version
+            q = q.filter(
+                Q(target_page=self.request.current_page) |
+                Q(target_page=self.request.current_page.publisher_public))
+        else:
+            # regard only public version
+            q = q.filter(target_page=self.request.current_page)
 
-            if remote_publishing_master():
-                q = q.filter(remote_publishing__icontains='localhost')
+        if remote_publishing_master():
+            q = q.filter(remote_publishing__icontains='localhost')
 
         #self.current_category = int(self.kwargs.get('category', 0))
         #if self.current_category > 0:
