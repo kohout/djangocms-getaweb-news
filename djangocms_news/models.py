@@ -205,12 +205,7 @@ class NewsItem(models.Model):
 
         return super(NewsItem, self).delete(*args, **kwargs)
 
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.title)
-
-        # 1. serialize on master side
+    def serialize_target_pages(self):
         if remote_publishing_master():
             # serialize
             # self.target_page.all -> self.remote_target_pages
@@ -218,10 +213,7 @@ class NewsItem(models.Model):
                 n.application_namespace for n in self.target_page.all()
             ])
 
-        # 2. save first to get PK
-        result = super(NewsItem, self).save(*args, **kwargs)
-
-        # 3. deserialize on slave side
+    def deserialize_target_pages(self):
         if remote_publishing_slave():
             # deserialize
             # self.remote_target_pages -> self.target_page (n:m)
@@ -238,6 +230,26 @@ class NewsItem(models.Model):
                         page_list.append(p)
                 self.target_page = page_list
 
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+
+        # 1. serialize on master side
+        self.serialize_target_pages()
+
+        # 2. save first to get PK
+        result = super(NewsItem, self).save(*args, **kwargs)
+
+        # 3. deserialize on slave side
+        self.deserialize_target_pages()
+
+        # 4. remote save()
+        self.remote_save()
+
+        return result
+
+    def remote_save(self):
         # 4. check if this is a master -> push to slave
         if remote_publishing_master():
             from djangocms_news.serializers import NewsSerializer
@@ -262,8 +274,6 @@ class NewsItem(models.Model):
                     if remote_host in self.remote_publishing:
                         api.news.post(news_data)
                         print "CREATED"
-
-        return result
 
 
     class Meta:
@@ -477,3 +487,12 @@ class NewsImage(models.Model):
         ordering = ['ordering']
         verbose_name = _(u'News Image')
         verbose_name_plural = _(u'News Images')
+
+if remote_publishing_master():
+    from django.db.models.signals import m2m_changed
+
+    def post_save_remote_news(sender, instance, action, reverse, *args, **kwargs):
+        if action in ['post_add', 'post_delete'] and not reverse:
+            instance.save()
+
+    m2m_changed.connect(post_save_remote_news, sender=NewsItem.target_page.through)
