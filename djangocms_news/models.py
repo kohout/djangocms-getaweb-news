@@ -209,9 +209,12 @@ class NewsItem(models.Model):
         if remote_publishing_master():
             # serialize
             # self.target_page.all -> self.remote_target_pages
-            self.remote_target_pages = u','.join([
-                n.application_namespace for n in self.target_page.all()
-            ])
+            try:
+                self.remote_target_pages = u','.join([
+                    n.application_namespace for n in self.target_page.all()
+                ])
+            except ValueError:
+                pass
 
     def deserialize_target_pages(self):
         if remote_publishing_slave():
