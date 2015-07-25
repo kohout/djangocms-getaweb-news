@@ -2,9 +2,15 @@
 from django.db.models import Q
 from django.core.urlresolvers import resolve
 from django.db.models.query_utils import Q
-from django.views.generic import ListView, DetailView
-from .models import NewsItem, NewsCategory
+from django.views.generic import ListView, DetailView, UpdateView
+from rest_framework import permissions
+from rest_framework import viewsets
+
+from .forms import UploadForm
 from .filters import NewsItemFilter
+from .serializers import NewsSerializer, NewsImageSerializer
+from .models import NewsItem, NewsCategory, NewsImage, \
+    remote_publishing_slave, remote_publishing_master
 
 
 class NewsMixin(object):
@@ -20,7 +26,11 @@ class NewsMixin(object):
         return self.current_page
 
     def get_queryset(self):
-        q = NewsItem.objects.filter(active=True)
+        if self.request.toolbar.edit_mode == True:
+            q = NewsItem.objects.all()
+        else:
+            q = NewsItem.objects.filter(active=True)
+        # target page
         if self.request.user.is_staff or self.request.user.is_superuser:
             # regard public and private version
             q = q.filter(
@@ -29,6 +39,9 @@ class NewsMixin(object):
         else:
             # regard only public version
             q = q.filter(target_page=self.request.current_page)
+
+        if remote_publishing_master():
+            q = q.filter(remote_publishing__icontains='localhost')
 
         #self.current_category = int(self.kwargs.get('category', 0))
         #if self.current_category > 0:
@@ -68,6 +81,7 @@ class NewsListView(NewsMixin, ListView):
 
     def get_context_data(self, *args, **kwargs):
         ctx = super(NewsListView, self).get_context_data(*args, **kwargs)
+        ctx['model'] = self.model
         if self.request.GET.get('category'):
             filter_categories = self.request.GET.get('category')
             filter_categories = filter_categories.split(',')
@@ -75,6 +89,21 @@ class NewsListView(NewsMixin, ListView):
         else:
             ctx['show_all'] = True
         return ctx
+
+
+class NewsUploadView(UpdateView):
+    model = NewsItem
+    form_class = UploadForm
+    template_name = 'djangocms_news/upload.html'
+
+    def form_valid(self, form):
+        for uploaded_file in form.cleaned_data['attachments']:
+            img = NewsImage()
+            img.news_item = self.object
+            img.ordering = self.object.newsimage_set.count()
+            img.image = uploaded_file
+            img.save()
+        return super(NewsUploadView, self).form_valid(form)
 
 
 class NewsDetailView(NewsMixin, DetailView):
@@ -111,3 +140,14 @@ class NewsDetailView(NewsMixin, DetailView):
         ctx['next'] = self.get_next()
         ctx['previous'] = self.get_previous()
         return ctx
+
+
+class NewsViewSet(viewsets.ModelViewSet):
+    queryset = NewsItem.objects.all()
+    serializer_class = NewsSerializer
+    lookup_field = 'remote_id'
+
+class NewsImageViewSet(viewsets.ModelViewSet):
+    queryset = NewsImage.objects.all()
+    serializer_class = NewsImageSerializer
+    lookup_field = 'remote_id'

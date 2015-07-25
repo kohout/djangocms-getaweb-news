@@ -45,6 +45,10 @@ def newsitem_url(context, slug, prefix=None, app_name=None,):
     return reverse(context['request'], prefix, app_name, 'news-detail', kwargs={
         'slug': slug})
 
+@register.simple_tag(takes_context=True)
+def newsupload_url(context, slug, prefix=None, app_name=None,):
+    return reverse(context['request'], prefix, app_name, 'news-upload',
+        kwargs={'slug': slug})
 
 @register.simple_tag(takes_context=True)
 def newscategory_url(context, get, prefix=None, app_name=None):

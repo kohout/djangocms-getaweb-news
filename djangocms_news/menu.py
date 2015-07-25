@@ -25,4 +25,4 @@ class NewsCategoryMenu(CMSAttachMenu):
             nodes.append(node)
         return nodes
 
-menu_pool.register_menu(NewsCategoryMenu)
+# menu_pool.register_menu(NewsCategoryMenu)

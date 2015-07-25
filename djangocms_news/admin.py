@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
 from django.utils.translation import ugettext as _
-from .models import NewsCategory, NewsItem, NewsImage
+from .models import NewsCategory, NewsItem, NewsImage, \
+    remote_publishing_master, remote_publishing
 from .forms import NewsItemForm
+from django.conf import settings
 
 from adminsortable.admin import SortableInlineAdminMixin
 
@@ -26,31 +28,54 @@ class NewsImageInline(SortableInlineAdminMixin, admin.TabularInline):
     render_preview.allow_tags = True
     render_preview.short_description = _(u'Preview')
 
+
 class NewsItemAdmin(admin.ModelAdmin):
     form = NewsItemForm
     list_display = ('render_preview', 'title', 'news_date', 'active', )
     list_display_links = ('render_preview', 'title', 'news_date', )
     readonly_fields = ('render_preview', )
     prepopulated_fields = {'slug': ('title',)}
-    fieldsets = (
-        (_(u'Common'), {
-            'fields': (
-                ('active', ),
-                ('news_date', ),
-                ('target_page', 'news_categories', ),
-            )
-        }),
-        (_(u'Content'), {
-            'fields': (
-                ('title', 'slug', ),
-                ('abstract', ),
-                ('content', ),
-                ('price', 'youtube_id'),
-                ('additional_images_pagination',
-                 'additional_images_speed', ),
-            ),
-        })
-    )
+    if remote_publishing_master():
+        fieldsets = (
+            (_(u'Common'), {
+                'fields': (
+                    ('active', ),
+                    ('news_date', ),
+                    ('target_page', 'news_categories', ),
+                    ('remote_publishing', ),
+                )
+            }),
+            (_(u'Content'), {
+                'fields': (
+                    ('title', 'slug', ),
+                    ('abstract', ),
+                    ('content', ),
+                    ('price', 'youtube_id'),
+                    ('additional_images_pagination',
+                     'additional_images_speed', ),
+                ),
+            })
+        )
+    else:
+        fieldsets = (
+            (_(u'Common'), {
+                'fields': (
+                    ('active', ),
+                    ('news_date', ),
+                    ('target_page', 'news_categories', ),
+                )
+            }),
+            (_(u'Content'), {
+                'fields': (
+                    ('title', 'slug', ),
+                    ('abstract', ),
+                    ('content', ),
+                    ('price', 'youtube_id'),
+                    ('additional_images_pagination',
+                     'additional_images_speed', ),
+                ),
+            })
+        )
     inlines = [NewsImageInline]
 
     raw_id_fields = ('news_categories', )
@@ -72,5 +97,7 @@ class NewsItemAdmin(admin.ModelAdmin):
     render_preview.allow_tags = True
     render_preview.short_description = _(u'Preview')
 
-admin.site.register(NewsCategory, NewsCategoryAdmin)
-admin.site.register(NewsItem, NewsItemAdmin)
+
+if not remote_publishing() or remote_publishing_master():
+    admin.site.register(NewsCategory, NewsCategoryAdmin)
+    admin.site.register(NewsItem, NewsItemAdmin)

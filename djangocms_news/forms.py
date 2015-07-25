@@ -1,8 +1,61 @@
+# -*- coding: utf-8 -*-
 from django import forms
-from .models import NewsItem
+from .fields import MultiSelectFormField
+from .models import NewsTeaser, NewsItem, remote_publishing_master
 from cms.models.pagemodel import Page
+from django.conf import settings
+from multiupload.fields import MultiFileField
+
+class UploadForm(forms.ModelForm):
+    attachments = MultiFileField(min_num=1, max_num=15,
+        label=u'Dateien auswählen',
+        max_file_size=1024*1024*5)
+    class Meta:
+        model = NewsItem
+        fields = ('attachments', )
+
+class TextCheckboxSelectMultiple(forms.widgets.CheckboxSelectMultiple):
+    """
+    Set checked values based on a comma separated list instead of a python list
+    """
+    def render(self, name, value, **kwargs):
+        if isinstance(value, basestring):
+            value = value.split(u",")
+        return super(TextCheckboxSelectMultiple, self).render(name, value, **kwargs)
+
+
+class TextMultiField(forms.MultipleChoiceField):
+    """
+    Work in conjunction with TextCheckboxSelectMultiple to store a
+    comma separated list of multiple choice values in a CharField/TextField
+    """
+    widget = TextCheckboxSelectMultiple
+
+    def validate(self, value):
+        pass
+
+    def clean(self, value):
+        val = super(TextMultiField, self).clean(value)
+        return u",".join(val)
+
+
+class NewsTeaserForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(NewsTeaserForm, self).__init__(*args, **kwargs)
+        print dir(self.fields['target_page'])
+        self.fields['target_page'].queryset = Page.objects.filter(
+            publisher_is_draft=True)
+
+    class Meta:
+        model = NewsTeaser
+
 
 class NewsItemForm(forms.ModelForm):
+
+    if remote_publishing_master():
+        remote_publishing = MultiSelectFormField(
+            choices=settings.NEWS_REMOTE_PUBLISHING_CHOICES)
 
     def label_from_instance(self, obj):
         """
@@ -20,4 +73,5 @@ class NewsItemForm(forms.ModelForm):
 
     class Meta:
         model = NewsItem
+
 
