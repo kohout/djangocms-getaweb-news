@@ -1,9 +1,18 @@
+# -*- coding: utf-8 -*-
 from django import forms
 from .fields import MultiSelectFormField
 from .models import NewsTeaser, NewsItem, remote_publishing_master
 from cms.models.pagemodel import Page
 from django.conf import settings
+from multiupload.fields import MultiFileField
 
+class UploadForm(forms.ModelForm):
+    attachments = MultiFileField(min_num=1, max_num=15,
+        label=u'Dateien auswählen',
+        max_file_size=1024*1024*5)
+    class Meta:
+        model = NewsItem
+        fields = ('attachments', )
 
 class TextCheckboxSelectMultiple(forms.widgets.CheckboxSelectMultiple):
     """

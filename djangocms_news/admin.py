@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
 from django.utils.translation import ugettext as _
-from .models import NewsCategory, NewsItem, NewsImage, remote_publishing_master
+from .models import NewsCategory, NewsItem, NewsImage, \
+    remote_publishing_master, remote_publishing
 from .forms import NewsItemForm
 from django.conf import settings
 
@@ -97,6 +98,6 @@ class NewsItemAdmin(admin.ModelAdmin):
     render_preview.short_description = _(u'Preview')
 
 
-if remote_publishing_master():
+if not remote_publishing() or remote_publishing_master():
     admin.site.register(NewsCategory, NewsCategoryAdmin)
     admin.site.register(NewsItem, NewsItemAdmin)

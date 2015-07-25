@@ -1,7 +1,6 @@
 from cms.models.pluginmodel import CMSPlugin
 from cms.models.pagemodel import Page
 from django.conf import settings
-from requests.exceptions import HTTPError
 from .fields import MultiSelectField
 from django.core.urlresolvers import reverse
 from django.db import models
@@ -14,7 +13,13 @@ from easy_thumbnails.exceptions import InvalidImageFormatError
 from easy_thumbnails.signal_handlers import generate_aliases_global
 from easy_thumbnails.signals import saved_file
 from tinymce.models import HTMLField
-import datetime, slumber
+import datetime
+
+try:
+    import slumber
+except ImportError:
+    slumber = None
+
 
 saved_file.connect(generate_aliases_global)
 
@@ -188,7 +193,7 @@ class NewsItem(models.Model):
 
     def delete(self, *args, **kwargs):
         # 2. check if this is a master
-        if remote_publishing_master():
+        if slumber and remote_publishing_master():
             allconf = settings.NEWS_REMOTE_PUBLISHING_CONF
             for remote_host, api_conf in allconf.iteritems():
                 api_conf = settings.NEWS_REMOTE_PUBLISHING_CONF[remote_host]
@@ -199,9 +204,8 @@ class NewsItem(models.Model):
                 try:
                     remote_news = api.news(news_key).get()
                     api.news(news_key).delete()
-                    print "DELETED"
                 except slumber.exceptions.HttpClientError:
-                    print "ALREADY DELETED"
+                    pass
 
         return super(NewsItem, self).delete(*args, **kwargs)
 
@@ -254,7 +258,7 @@ class NewsItem(models.Model):
 
     def remote_save(self):
         # 4. check if this is a master -> push to slave
-        if remote_publishing_master():
+        if slumber and remote_publishing_master():
             from djangocms_news.serializers import NewsSerializer
             allconf = settings.NEWS_REMOTE_PUBLISHING_CONF
             for remote_host, api_conf in allconf.iteritems():
