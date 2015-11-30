@@ -85,5 +85,8 @@ class MultiSelectField(models.Field):
 
 # needed for South compatibility
 
-from south.modelsinspector import add_introspection_rules
-add_introspection_rules([], ["^djangocms_news\.fields\.MultiSelectField"])
+try:
+    from south.modelsinspector import add_introspection_rules
+    add_introspection_rules([], ["^djangocms_news\.fields\.MultiSelectField"])
+except ImportError:
+    pass

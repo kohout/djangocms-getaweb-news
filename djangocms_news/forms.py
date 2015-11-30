@@ -43,12 +43,17 @@ class NewsTeaserForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(NewsTeaserForm, self).__init__(*args, **kwargs)
-        print dir(self.fields['target_page'])
         self.fields['target_page'].queryset = Page.objects.filter(
             publisher_is_draft=True)
 
     class Meta:
         model = NewsTeaser
+        fields = (
+            'title',
+            'news_categories',
+            'target_page',
+            'ordering',
+        )
 
 
 class NewsItemForm(forms.ModelForm):
@@ -73,5 +78,16 @@ class NewsItemForm(forms.ModelForm):
 
     class Meta:
         model = NewsItem
-
-
+        fields = (
+            'active',
+            'news_date',
+            'title',
+            'abstract',
+            'content',
+            'news_categories',
+            'target_page',
+            'price',
+            'youtube_id',
+            'additional_images_pagination',
+            'additional_images_speed',
+        )

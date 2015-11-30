@@ -116,7 +116,7 @@ class NewsItem(models.Model):
 
     news_categories = models.ManyToManyField(
         NewsCategory,
-        blank=True, null=True,
+        blank=True,
         verbose_name=_(u'Selected news categories'))
 
     target_page = models.ManyToManyField(
@@ -302,7 +302,7 @@ class NewsTeaser(CMSPlugin):
         verbose_name=_(u'Headline of the news list'))
 
     news_categories = models.ManyToManyField(NewsCategory,
-        blank=True, null=True,
+        blank=True,
         verbose_name=_(u'Selected news categories'))
 
     ordering = models.CharField(
