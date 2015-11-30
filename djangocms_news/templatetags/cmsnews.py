@@ -40,6 +40,8 @@ def newsindex_url(context, prefix=None, app_name=None,):
 
 @register.simple_tag(takes_context=True)
 def newsitem_url(context, slug, prefix=None, app_name=None,):
+    if not slug:
+        return u''
     return reverse(context['request'], prefix, app_name, 'news-detail', kwargs={
         'slug': slug})
 
