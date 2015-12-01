@@ -89,7 +89,7 @@ class NewsItem(models.Model):
         verbose_name=_(u'Created at'))
 
     active = models.BooleanField(
-        default=False,
+        default=True,
         verbose_name=_(u'Active'))
 
     news_date = models.DateTimeField(
@@ -141,6 +141,10 @@ class NewsItem(models.Model):
         help_text=_(
             u'This option is relevant, if you choose the slideshow-mode'),
         verbose_name=_(u'Speed of transition'))
+
+    tags = models.TextField(
+        blank=True, null=True,
+        verbose_name=_(u'Tags'))
 
 # region remote_publishing
     if remote_publishing_slave() or remote_publishing_master():

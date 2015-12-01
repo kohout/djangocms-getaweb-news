@@ -8,8 +8,10 @@ from django.conf import settings
 
 from adminsortable.admin import SortableInlineAdminMixin
 
+
 class NewsCategoryAdmin(admin.ModelAdmin):
     list_display = ('title', 'newsitems_count', )
+
 
 class NewsImageInline(SortableInlineAdminMixin, admin.TabularInline):
     fields = ('render_preview', 'image', 'title', 'alt', 'ordering', )

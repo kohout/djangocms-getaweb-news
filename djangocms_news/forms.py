@@ -84,6 +84,7 @@ class NewsItemForm(forms.ModelForm):
             'title',
             'abstract',
             'content',
+            'tags',
             'news_categories',
             'target_page',
             'price',
