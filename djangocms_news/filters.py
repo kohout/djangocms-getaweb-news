@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from django.db.models.query_utils import Q
-from django_filters import FilterSet, ModelMultipleChoiceFilter
+from django_filters import FilterSet
 from django_filters.filters import Filter
-from djangocms_news.models import NewsItem, NewsCategory
+from djangocms_news.models import NewsItem
 
 
 def news_category(qs, value):

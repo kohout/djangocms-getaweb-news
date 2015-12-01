@@ -50,7 +50,7 @@ class NewsItemAdmin(admin.ModelAdmin):
             (_(u'Content'), {
                 'fields': (
                     ('title', 'slug', ),
-                    ('abstract', ),
+                    ('abstract', 'tags'),
                     ('content', ),
                     ('price', 'youtube_id'),
                     ('additional_images_pagination',
@@ -70,7 +70,7 @@ class NewsItemAdmin(admin.ModelAdmin):
             (_(u'Content'), {
                 'fields': (
                     ('title', 'slug', ),
-                    ('abstract', ),
+                    ('abstract', 'tags'),
                     ('content', ),
                     ('price', 'youtube_id'),
                     ('additional_images_pagination',

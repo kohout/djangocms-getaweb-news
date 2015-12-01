@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
-from django.db.models import Q
+from django.conf import settings
 from django.core.urlresolvers import resolve
 from django.db.models.query_utils import Q
 from django.views.generic import ListView, DetailView, UpdateView
-from rest_framework import permissions
-from rest_framework import viewsets
 
 from .forms import UploadForm
 from .filters import NewsItemFilter
-from .serializers import NewsSerializer, NewsImageSerializer
 from .models import NewsItem, NewsCategory, NewsImage, \
     remote_publishing_slave, remote_publishing_master
 
@@ -60,6 +57,7 @@ class NewsMixin(object):
 
     def get_context_data(self, *args, **kwargs):
         ctx = super(NewsMixin, self).get_context_data(*args, **kwargs)
+        ctx['current_app'] = resolve(self.request.path_info).namespace
         ctx['categories'] = self.get_news_categories()
         if 'category' in self.kwargs:
             ctx['category'] = self.kwargs['category']
@@ -74,6 +72,10 @@ class NewsListView(NewsMixin, ListView):
     template_name = 'djangocms_news/news_index.html'
     paginate_by = 25
     filter_class = NewsItemFilter
+
+    def __init__(self):
+        self.paginate_by = getattr(settings, 'NEWS_PAGINATE_BY', 25)
+        super(NewsListView, self).__init__()
 
     def get_queryset(self):
         q = super(NewsListView, self).get_queryset()
@@ -142,12 +144,18 @@ class NewsDetailView(NewsMixin, DetailView):
         return ctx
 
 
-class NewsViewSet(viewsets.ModelViewSet):
-    queryset = NewsItem.objects.all()
-    serializer_class = NewsSerializer
-    lookup_field = 'remote_id'
+try:
+    from rest_framework import viewsets
+    from .serializers import NewsSerializer, NewsImageSerializer
 
-class NewsImageViewSet(viewsets.ModelViewSet):
-    queryset = NewsImage.objects.all()
-    serializer_class = NewsImageSerializer
-    lookup_field = 'remote_id'
+    class NewsViewSet(viewsets.ModelViewSet):
+        queryset = NewsItem.objects.all()
+        serializer_class = NewsSerializer
+        lookup_field = 'remote_id'
+
+    class NewsImageViewSet(viewsets.ModelViewSet):
+        queryset = NewsImage.objects.all()
+        serializer_class = NewsImageSerializer
+        lookup_field = 'remote_id'
+except ImportError:
+    pass

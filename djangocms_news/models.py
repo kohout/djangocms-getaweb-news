@@ -132,7 +132,7 @@ class NewsItem(models.Model):
         verbose_name=_(u'ID of embedded youtube video'))
 
     additional_images_pagination = models.PositiveIntegerField(
-        default=1,
+        default=0,
         choices=ADDITIONAL_IMAGES_PAGINATION_CHOICES,
         verbose_name=_(u'Pagination of additional images'))
 
