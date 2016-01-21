@@ -4,9 +4,11 @@ from django.utils.translation import ugettext as _
 from .models import NewsCategory, NewsItem, NewsImage, \
     remote_publishing_master, remote_publishing
 from .forms import NewsItemForm
-from django.conf import settings
 
-from adminsortable.admin import SortableInlineAdminMixin
+try:
+    from adminsortable2.admin import SortableInlineAdminMixin
+except:
+    from adminsortable.admin import SortableInlineAdminMixin
 
 
 class NewsCategoryAdmin(admin.ModelAdmin):
