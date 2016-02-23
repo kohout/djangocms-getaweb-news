@@ -1,2 +1,5 @@
 django-admin-sortable2
+django-tinymce
+django-multiupload
+django-filter
 # git+https://github.com/jrief/django-admin-sortable2#egg=django-admin-sortable2

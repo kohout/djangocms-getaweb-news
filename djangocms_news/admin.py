@@ -91,8 +91,11 @@ class NewsItemAdmin(admin.ModelAdmin):
         news_image = news_item.get_first_image()
         if not news_image:
             return u''
+        try:
+            url = news_image.image['preview'].url
+        except UnicodeEncodeError:
+            return u''
 
-        url = news_image.image['preview'].url
         if not url:
             return u''
 
